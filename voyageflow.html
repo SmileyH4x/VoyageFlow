@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoyageFlow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --glass-bg: rgba(13, 8, 30, 0.82);
+      --glass-border: rgba(255, 255, 255, 0.14);
+    }
+    body {
+      background: radial-gradient(circle at 15% 20%, #1a0439, #070312 45%, #010103 90%);
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e8f5ff;
+      animation: gradientShift 24s ease-in-out infinite alternate;
+      scroll-behavior: smooth;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(125deg, rgba(255, 98, 191, 0.12), rgba(97, 159, 255, 0.1), rgba(255, 193, 94, 0.08));
+      mix-blend-mode: screen;
+      pointer-events: none;
+      z-index: -2;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 200px 200px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: -1;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 30%; }
+      100% { background-position: 100% 70%; }
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-14px); }
+    }
+    @keyframes pulseOrbit {
+      0% { transform: rotate(0deg) scale(1); opacity: 0.35; }
+      50% { transform: rotate(180deg) scale(1.1); opacity: 0.75; }
+      100% { transform: rotate(360deg) scale(1); opacity: 0.35; }
+    }
+    .glass-card {
+      backdrop-filter: blur(26px);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
+    }
+    .calculator-card {
+      backdrop-filter: blur(18px);
+      background: rgba(4, 16, 34, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: border 0.3s ease, transform 0.3s ease;
+    }
+    .calculator-card:hover {
+      border-color: rgba(103, 232, 249, 0.7);
+      transform: translateY(-2px);
+    }
+    .destination-card {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: transform 0.5s ease, box-shadow 0.5s ease, border 0.4s ease;
+    }
+    .destination-card:hover {
+      transform: translateY(-12px);
+      box-shadow: 0 40px 90px rgba(0,0,0,0.55);
+    }
+    .destination-card.active {
+      border-color: rgba(103, 232, 249, 0.85);
+      box-shadow: 0 40px 110px rgba(80, 196, 255, 0.3);
+    }
+    .hero-image {
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+    }
+    .nav-dot {
+      transition: all 0.35s ease;
+    }
+    .nav-dot.active {
+      color: #67e8f9;
+      border-color: #67e8f9;
+    }
+    .page-section {
+      display: none;
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .page-section.active {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .modal-overlay {
+      background: rgba(2, 8, 28, 0.88);
+      backdrop-filter: blur(18px);
+      display: flex;
+    }
+    .gradient-button {
+      background: linear-gradient(120deg, #ff82ce, #775eff, #42ffff);
+      color: #08031c;
+      font-weight: 600;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .gradient-button:hover {
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 18px 42px rgba(0, 240, 255, 0.3);
+    }
+    .sticky-nav {
+      backdrop-filter: blur(18px);
+      background: rgba(10, 6, 24, 0.88);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    input:focus, textarea:focus {
+      box-shadow: 0 0 0 2px rgba(102, 252, 241, 0.45);
+    }
+    .orb {
+      filter: blur(140px);
+      opacity: 0.55;
+      animation: float 12s ease-in-out infinite;
+    }
+    .orb:nth-child(2) {
+      animation-delay: 4s;
+    }
+    .orbit-lines {
+      animation: pulseOrbit 16s linear infinite;
+    }
+  </style>
+</head>
+<body class="fade-scroll relative overflow-x-hidden">
+  <div class="pointer-events-none absolute inset-0 -z-10">
+    <div class="orb absolute -top-32 -left-10 w-96 h-96 bg-fuchsia-500/25 rounded-full"></div>
+    <div class="orb absolute bottom-0 right-0 w-[520px] h-[520px] bg-orange-400/20 rounded-full"></div>
+    <svg class="absolute inset-0 orbit-lines" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="400" cy="400" r="280" stroke="rgba(103,232,249,0.2)" stroke-width="0.6" fill="none"/>
+      <circle cx="400" cy="400" r="360" stroke="rgba(79,70,229,0.2)" stroke-width="0.6" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="relative max-w-6xl mx-auto py-12 px-4 lg:px-0 space-y-16 z-10">
+    <header class="text-center space-y-5">
+      <p class="uppercase tracking-[0.4em] text-xs text-cyan-200/70">VoyageFlow</p>
+      <h1 class="text-4xl md:text-5xl font-semibold text-white">Design Your Dream Journey</h1>
+      <p class="text-cyan-100/70 text-lg max-w-2xl mx-auto">A premium travel simulator with glassmorphism, live animations, and pricing that adapts to every city vibe.</p>
+      <div class="flex justify-center gap-2 text-xs text-cyan-200/60">
+        <span class="px-3 py-1 border border-cyan-100/20 rounded-full nav-dot active" data-step="1">Registration</span>
+        <span class="px-3 py-1 border border-cyan-100/20 rounded-full nav-dot" data-step="2">Destinations</span>
+        <span class="px-3 py-1 border border-cyan-100/20 rounded-full nav-dot" data-step="3">Itinerary</span>
+        <span class="px-3 py-1 border border-cyan-100/20 rounded-full nav-dot" data-step="4">Confirmation</span>
+      </div>
+    </header>
+
+    <!-- PAGE 1: Registration -->
+    <section id="page-1" class="page-section active">
+      <div class="glass-card rounded-[28px] p-10">
+        <div class="space-y-2 text-center">
+          <p class="text-sm uppercase tracking-[0.3em] text-cyan-200/70">Start Here</p>
+          <h2 class="text-3xl font-semibold text-white">Register for VoyageFlow</h2>
+          <p class="text-cyan-100/70">Tell us a bit about you and we’ll personalize everything.</p>
+        </div>
+        <form id="registration-form" class="mt-10 grid md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm text-cyan-100/80">Full Name</label>
+            <input type="text" name="name" class="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" placeholder="Ava Bennett" required />
+            <p class="text-rose-300 text-xs hidden">Name is required.</p>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-cyan-100/80">Email</label>
+            <input type="email" name="email" class="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" placeholder="ava@email.com" required />
+            <p class="text-rose-300 text-xs hidden">Enter a valid email.</p>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-cyan-100/80">Phone (10 digits)</label>
+            <input type="text" name="phone" maxlength="10" class="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" placeholder="9876543210" required />
+            <p class="text-rose-300 text-xs hidden">Phone must be 10 digits.</p>
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm text-cyan-100/80">PIN Code (6 digits)</label>
+            <input type="text" name="pin" maxlength="6" class="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" placeholder="560001" required />
+            <p class="text-rose-300 text-xs hidden">PIN must be 6 digits.</p>
+          </div>
+          <div class="md:col-span-2 space-y-2">
+            <label class="text-sm text-cyan-100/80">Short Bio</label>
+            <textarea name="bio" rows="4" class="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-white" placeholder="Tell us your travel vibe..." required></textarea>
+            <p class="text-rose-300 text-xs hidden">Bio cannot be empty.</p>
+          </div>
+          <div class="md:col-span-2 flex justify-center">
+            <button class="gradient-button px-10 py-3 rounded-full">Begin the Journey</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- PAGE 2: Travel Blog -->
+    <section id="page-2" class="page-section space-y-10">
+      <div class="sticky top-4 z-10 rounded-[28px] sticky-nav px-4 py-3 flex flex-wrap justify-center gap-3 text-sm font-semibold text-cyan-100">
+        <button data-destination="paris" class="scroll-link px-4 py-2 rounded-full hover:bg-white/10">Paris</button>
+        <button data-destination="tokyo" class="scroll-link px-4 py-2 rounded-full hover:bg-white/10">Tokyo</button>
+        <button data-destination="rome" class="scroll-link px-4 py-2 rounded-full hover:bg-white/10">Rome</button>
+        <button data-destination="sydney" class="scroll-link px-4 py-2 rounded-full hover:bg-white/10">Sydney</button>
+        <button data-destination="capetown" class="scroll-link px-4 py-2 rounded-full hover:bg-white/10">Cape Town</button>
+      </div>
+      <div class="space-y-12" id="destinations">
+        <div id="paris" data-destination-card="paris" class="glass-card destination-card rounded-[32px] p-8 lg:p-10 space-y-6">
+          <div class="hero-image h-72 md:h-96 relative">
+            <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1600&q=80" alt="Paris skyline" class="w-full h-full object-cover" loading="lazy" />
+            <span class="absolute top-6 right-6 bg-white/80 text-slate-900 text-xs font-semibold px-4 py-2 rounded-full">Avg ₹82K luxe week</span>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4">
+              <h3 class="text-3xl font-semibold text-white">Paris, France</h3>
+              <p class="text-cyan-100/80">From the shimmer of the Eiffel Tower to Louvre nights and the whispers of the French Revolution, Paris is a poetic blend of rebellion and romance. Café-hop the Champs-Élysées while the Seine glows under Art Nouveau bridges.</p>
+              <button type="button" data-destination="paris" class="select-destination gradient-button px-6 py-3 rounded-full text-sm">Select Paris</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80" alt="Eiffel Tower" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1529429617124-95b109e86bb8?auto=format&fit=crop&w=800&q=80" alt="Louvre" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=800&q=80" alt="Champs Elysees" class="rounded-2xl h-32 object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        <div id="tokyo" data-destination-card="tokyo" class="glass-card destination-card rounded-[32px] p-8 lg:p-10 space-y-6">
+          <div class="hero-image h-72 md:h-96 relative">
+            <img src="https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=1600&q=80" alt="Tokyo skyline" class="w-full h-full object-cover" loading="lazy" />
+            <span class="absolute top-6 right-6 bg-white/80 text-slate-900 text-xs font-semibold px-4 py-2 rounded-full">Avg ¥220K neon week</span>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4 order-2 md:order-1">
+              <h3 class="text-3xl font-semibold text-white">Tokyo, Japan</h3>
+              <p class="text-cyan-100/80">Neon temples, anime arcades, and tranquil tea ceremonies coexist in Tokyo. Glide through Shibuya waves, breathe incense at Senso-ji, and plug into Akihabara’s electric heartbeat before midnight ramen runs.</p>
+              <button type="button" data-destination="tokyo" class="select-destination gradient-button px-6 py-3 rounded-full text-sm">Select Tokyo</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3 order-1 md:order-2">
+              <img src="https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=800&q=80" alt="Shibuya" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?auto=format&fit=crop&w=800&q=80" alt="Senso-ji" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1504805572947-34fad45aed93?auto=format&fit=crop&w=800&q=80" alt="Akihabara" class="rounded-2xl h-32 object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        <div id="rome" data-destination-card="rome" class="glass-card destination-card rounded-[32px] p-8 lg:p-10 space-y-6">
+          <div class="hero-image h-72 md:h-96 relative">
+            <img src="https://images.unsplash.com/photo-1503220317375-aaad61436b1b?auto=format&fit=crop&w=1600&q=80" alt="Rome skyline" class="w-full h-full object-cover" loading="lazy" />
+            <span class="absolute top-6 right-6 bg-white/80 text-slate-900 text-xs font-semibold px-4 py-2 rounded-full">Avg €1.9K dolce week</span>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4">
+              <h3 class="text-3xl font-semibold text-white">Rome, Italy</h3>
+              <p class="text-cyan-100/80">Rome is a living museum where emperors debated policy before espresso shots. Marvel at Colosseum arches, toss coins in Trevi, and follow the scent of truffle pasta through sun-soaked piazzas.</p>
+              <button type="button" data-destination="rome" class="select-destination gradient-button px-6 py-3 rounded-full text-sm">Select Rome</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <img src="https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=800&q=80" alt="Colosseum" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1514894780887-121968d00567?auto=format&fit=crop&w=800&q=80" alt="Trevi Fountain" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=800&q=80" alt="Roman Forum" class="rounded-2xl h-32 object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        <div id="sydney" data-destination-card="sydney" class="glass-card destination-card rounded-[32px] p-8 lg:p-10 space-y-6">
+          <div class="hero-image h-72 md:h-96 relative">
+            <img src="https://images.unsplash.com/photo-1509718443690-d8e2fb3474b7?auto=format&fit=crop&w=1600&q=80" alt="Sydney skyline" class="w-full h-full object-cover" loading="lazy" />
+            <span class="absolute top-6 right-6 bg-white/80 text-slate-900 text-xs font-semibold px-4 py-2 rounded-full">Avg A$3.1K surf week</span>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4 order-2 md:order-1">
+              <h3 class="text-3xl font-semibold text-white">Sydney, Australia</h3>
+              <p class="text-cyan-100/80">Sydney hums with beach-house energy and skyline glamour. Watch sunrise on Bondi, sip flat whites near Circular Quay, and sail under the Harbour Bridge as the Opera House glows.</p>
+              <button type="button" data-destination="sydney" class="select-destination gradient-button px-6 py-3 rounded-full text-sm">Select Sydney</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3 order-1 md:order-2">
+              <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80" alt="Opera House" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1476922027627-aa7293e3aaa8?auto=format&fit=crop&w=800&q=80" alt="Bondi Beach" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1478118330274-ff72cf1161a7?auto=format&fit=crop&w=800&q=80" alt="Harbour Bridge" class="rounded-2xl h-32 object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        <div id="capetown" data-destination-card="capetown" class="glass-card destination-card rounded-[32px] p-8 lg:p-10 space-y-6">
+          <div class="hero-image h-72 md:h-96 relative">
+            <img src="https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1600&q=80" alt="Cape Town skyline" class="w-full h-full object-cover" loading="lazy" />
+            <span class="absolute top-6 right-6 bg-white/80 text-slate-900 text-xs font-semibold px-4 py-2 rounded-full">Avg R36K coastal week</span>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4">
+              <h3 class="text-3xl font-semibold text-white">Cape Town, South Africa</h3>
+              <p class="text-cyan-100/80">Cape Town swirls color, cuisine, and coastline. Watch clouds spill over Table Mountain, walk Bo-Kaap’s technicolor lanes, then toast the sunset at the V&A Waterfront.</p>
+              <button type="button" data-destination="capetown" class="select-destination gradient-button px-6 py-3 rounded-full text-sm">Select Cape Town</button>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <img src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80" alt="Table Mountain" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80" alt="Bo-Kaap" class="rounded-2xl h-32 object-cover" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1497561813398-8fcc7a37b567?auto=format&fit=crop&w=800&q=80" alt="V and A Waterfront" class="rounded-2xl h-32 object-cover" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="text-center pt-6">
+        <button id="to-calculator" class="gradient-button px-12 py-4 rounded-full text-lg">Next → Trip Calculator</button>
+      </div>
+    </section>
+
+    <!-- PAGE 3: Calculator -->
+    <section id="page-3" class="page-section">
+      <div class="glass-card rounded-[32px] p-10 space-y-8">
+        <div class="flex flex-wrap items-center justify-between gap-6">
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-cyan-200/70">Curated For</p>
+            <h2 class="text-3xl font-semibold text-white" id="destination-chip">—</h2>
+            <p class="text-cyan-100/75" id="destination-tagline">Select a city to unlock curated pricing.</p>
+          </div>
+          <button id="change-destination" class="px-6 py-3 rounded-full border border-cyan-200/30 text-cyan-100 hover:bg-white/10">Change Destination</button>
+        </div>
+        <p class="text-sm text-cyan-100/70" id="calculator-note">Mix & match travel, food, and activities once you pick your dream destination.</p>
+        <div class="grid lg:grid-cols-3 gap-6 pt-4">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-white">Travel Options</h3>
+              <span class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">Take Off</span>
+            </div>
+            <div id="travel-options" class="space-y-4 min-h-[220px] text-sm text-cyan-100/60 italic">Pick a destination to reveal flight plans.</div>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-white">Food Packages</h3>
+              <span class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">Savor</span>
+            </div>
+            <div id="food-options" class="space-y-4 min-h-[220px] text-sm text-cyan-100/60 italic">Pick a destination to unlock chef tables.</div>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-white">Activities</h3>
+              <span class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">Play</span>
+            </div>
+            <div id="activities-options" class="space-y-4 min-h-[220px] text-sm text-cyan-100/60 italic">Pick a destination to see immersive experiences.</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-8 mt-4">
+          <div>
+            <p class="text-sm text-cyan-100/70">Live Total</p>
+            <p class="text-4xl font-semibold text-white" id="total-amount">₹0</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button id="clear-options" class="px-6 py-3 rounded-full border border-cyan-200/30 text-cyan-100 hover:bg-white/10">Clear Choices</button>
+            <button id="confirm-trip" class="gradient-button px-10 py-3 rounded-full">Confirm Selection</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4: Final Confirmation -->
+    <section id="page-4" class="page-section">
+      <div class="glass-card rounded-[32px] p-10 space-y-7 relative overflow-hidden">
+        <div class="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-cyan-500/10 to-transparent pointer-events-none"></div>
+        <p class="uppercase tracking-[0.35em] text-xs text-cyan-200/70">Thank you for choosing us</p>
+        <h2 class="text-4xl font-semibold text-white" id="summary-greeting">Bon Voyage!</h2>
+        <p class="text-cyan-100/80" id="summary-subtitle">We’ve emailed your itinerary to <span class="font-semibold" id="summary-email">—</span>. Celebrate the journey!</p>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="glass-card rounded-2xl p-6 space-y-2">
+            <p class="text-sm text-cyan-200/60">Traveler</p>
+            <h3 class="text-2xl font-semibold text-white" id="summary-name">—</h3>
+          </div>
+          <div class="glass-card rounded-2xl p-6 space-y-2">
+            <p class="text-sm text-cyan-200/60">Destination</p>
+            <h3 class="text-2xl font-semibold text-white" id="summary-destination">—</h3>
+          </div>
+          <div class="glass-card rounded-2xl p-6 space-y-2">
+            <p class="text-sm text-cyan-200/60">Total Budget</p>
+            <h3 class="text-3xl font-semibold text-white" id="summary-total">₹0</h3>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <p class="text-sm text-cyan-200/60">Selected Experiences</p>
+          <ul id="summary-items" class="space-y-2 text-cyan-100/90 list-disc list-inside"></ul>
+        </div>
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">1. Boarding Pass</p>
+            <p class="text-cyan-100/80 mt-2">Our concierge secures tickets & upgrades matching your selections.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">2. Culinary Flow</p>
+            <p class="text-cyan-100/80 mt-2">Restaurant confirmations and dietary notes synced to your inbox.</p>
+          </div>
+          <div class="glass-card rounded-2xl p-5">
+            <p class="text-xs uppercase tracking-[0.3em] text-cyan-200/60">3. Experience Kit</p>
+            <p class="text-cyan-100/80 mt-2">QR passes, museum fast-tracks, and local tips delivered 48h prior.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap justify-center gap-4 pt-4">
+          <button id="start-over" class="px-8 py-3 rounded-full border border-cyan-200/30 text-cyan-100 hover:bg-white/10">Plan Another Trip</button>
+          <button id="download-summary" class="gradient-button px-8 py-3 rounded-full">Download Summary</button>
+        </div>
+        <p class="text-center text-sm text-cyan-100/70">Thank you for choosing VoyageFlow — where travel feels like art.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay fixed inset-0 hidden items-center justify-center z-50">
+    <div class="glass-card rounded-[28px] p-8 text-center space-y-4 w-80">
+      <p id="modal-message" class="text-xl font-semibold text-white">Message</p>
+      <button id="modal-close" class="gradient-button w-full py-3 rounded-full">Continue</button>
+    </div>
+  </div>
+
+  <script>
+    const pages = [...document.querySelectorAll('.page-section')];
+    const navDots = [...document.querySelectorAll('.nav-dot')];
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalMessage = document.getElementById('modal-message');
+    const modalClose = document.getElementById('modal-close');
+    const destinationChip = document.getElementById('destination-chip');
+    const destinationTagline = document.getElementById('destination-tagline');
+    const calculatorNote = document.getElementById('calculator-note');
+    const travelContainer = document.getElementById('travel-options');
+    const foodContainer = document.getElementById('food-options');
+    const activitiesContainer = document.getElementById('activities-options');
+    const totalAmountEl = document.getElementById('total-amount');
+
+    const destinationCatalog = {
+      paris: {
+        label: 'Paris, France',
+        tagline: 'Sunrise croissants, midnight jazz & couture boulevards.',
+        travel: [
+          { name: 'Direct Flight — Air Lumière', price: 32000, desc: 'Non-stop from Delhi with premium dining & lounge.' },
+          { name: 'Business Flight — Royale Aéro', price: 56000, desc: 'Lie-flat suites, spa showers & champagne service.' },
+          { name: 'EuroRail via Zurich', price: 21000, desc: 'Scenic rail through the Alps with glass-dome cars.' }
+        ],
+        food: [
+          { name: 'Boulangerie Breakfast Bundle', price: 3500, desc: 'Daily pastries, butter croissants & artisan coffee.' },
+          { name: 'Seine Dinner Cruise', price: 7200, desc: 'Four-course menu with live jazz on the river.' },
+          { name: 'Champagne & Fromage Cellar', price: 5400, desc: 'Sommelier-led tastings beneath Montmartre.' }
+        ],
+        activities: [
+          { name: 'Louvre Night Secrets Tour', price: 4200, desc: 'After-hours access with a resident curator.' },
+          { name: 'Versailles Picnic Escape', price: 6500, desc: 'Skip-the-line, royal gardens & gourmet hamper.' },
+          { name: 'Montmartre Creative Walk', price: 2600, desc: 'Street art crawl with atelier sketch session.' }
+        ]
+      },
+      tokyo: {
+        label: 'Tokyo, Japan',
+        tagline: 'Shinkansen speed, neon nights & Edo serenity.',
+        travel: [
+          { name: 'Direct Flight — Haneda Halo', price: 36000, desc: 'Non-stop to Haneda with anime-inspired cabin.' },
+          { name: 'Business Flight — Sakura First', price: 62000, desc: 'Lie-flat pods, kaiseki dining & onsen lounge.' },
+          { name: 'Shinkansen Explorer Pass', price: 24000, desc: 'Unlimited bullet trains between Tokyo, Kyoto & Osaka.' }
+        ],
+        food: [
+          { name: 'Ramen Rhapsody Crawl', price: 3800, desc: 'Slurp spots across Shinjuku & Nakameguro.' },
+          { name: 'Kaiseki Omakase Tasting', price: 8800, desc: '11-course seasonal menu by Michelin chefs.' },
+          { name: 'Tsukiji Dawn Breakfast', price: 5200, desc: 'Sushi at sunrise + tea ceremony add-on.' }
+        ],
+        activities: [
+          { name: 'TeamLab Planets Immersion', price: 3900, desc: 'Private slot through the digital dreamscape.' },
+          { name: 'Mount Fuji Day Adventure', price: 7800, desc: 'Ropeway views, onsen soak & lake cruise.' },
+          { name: 'Neon Nightlife Pass', price: 4600, desc: 'Guide-led Golden Gai + Akihabara arcade spree.' }
+        ]
+      },
+      rome: {
+        label: 'Rome, Italy',
+        tagline: 'Dolce vita strolls, marble history & espresso energy.',
+        travel: [
+          { name: 'Direct Flight — Fiumicino Flair', price: 28000, desc: 'Seasonal direct flight with Italian menu.' },
+          { name: 'Business Flight — Luminosa', price: 52000, desc: 'Suite seating, truffle dinners & limo transfer.' },
+          { name: 'EuroRail via Milan', price: 19000, desc: 'High-speed train with panoramic lounges.' }
+        ],
+        food: [
+          { name: 'Pasta Masterclass + Dinner', price: 4700, desc: 'Handmade pasta lesson in Trastevere.' },
+          { name: 'Vineyard & Olive Grove Lunch', price: 6400, desc: 'Day trip with sommelier in Lazio hills.' },
+          { name: 'Gelato + Espresso Passport', price: 2500, desc: 'Curated tastings across iconic gelaterias.' }
+        ],
+        activities: [
+          { name: 'Ancient Ruins VIP Pass', price: 4100, desc: 'Colosseum underground + Forum rooftops.' },
+          { name: 'Tuscany Sunset Escape', price: 7200, desc: 'Convertible drive & farm-to-table dinner.' },
+          { name: 'Vatican Dawn Sistine Tour', price: 5600, desc: 'Exclusive early entry with art historian.' }
+        ]
+      },
+      sydney: {
+        label: 'Sydney, Australia',
+        tagline: 'Surf mornings, skyline nights & harbour breeze.',
+        travel: [
+          { name: 'Direct Flight — Harbour Hopper', price: 34000, desc: 'Non-stop flight with coastal-inspired menu.' },
+          { name: 'Business Flight — Pacific Dreamliner', price: 59000, desc: 'Suite pods, spa perks & chauffeur pickup.' },
+          { name: 'Cruise + Flight Fusion', price: 26000, desc: 'Fly into Melbourne, sail to Sydney via coast.' }
+        ],
+        food: [
+          { name: 'Harbourfront Seafood Degustation', price: 6200, desc: 'Chef’s tasting at Circular Quay.' },
+          { name: 'Coastal Brunch Pass', price: 2800, desc: 'Bondi, Manly & Coogee café credits.' },
+          { name: 'Hunter Valley Wine Dinner', price: 6800, desc: 'Sunset pairing menu & private cellar tour.' }
+        ],
+        activities: [
+          { name: 'Blue Mountains Trek', price: 5200, desc: 'Guided canyon hike + scenic railway.' },
+          { name: 'Harbour Yacht Sundowner', price: 7400, desc: 'Private catamaran with DJ & bites.' },
+          { name: 'Surf School Immersion', price: 3100, desc: '3-day Bondi coaching with video analysis.' }
+        ]
+      },
+      capetown: {
+        label: 'Cape Town, South Africa',
+        tagline: 'Two oceans, technicolor streets & vineyard magic.',
+        travel: [
+          { name: 'Direct Flight — CapeAir Comfort', price: 30000, desc: 'Overnight flight with local cuisine.' },
+          { name: 'Business Flight — Safari Class', price: 54000, desc: 'Suite seating, wine tastings & lounge spa.' },
+          { name: 'Garden Route Roadtrip Kit', price: 22000, desc: 'Fly to Johannesburg + chauffeured scenic drive.' }
+        ],
+        food: [
+          { name: 'Cape Malay Feast', price: 3800, desc: 'Bo-Kaap home dining & spice storytelling.' },
+          { name: 'Winelands Picnic Series', price: 5200, desc: 'Franschhoek tasting, picnic & cellar access.' },
+          { name: 'Oceanfront Braai Night', price: 4100, desc: 'Chef-grilled seafood on Clifton sands.' }
+        ],
+        activities: [
+          { name: 'Table Mountain Hike + Cableway', price: 3600, desc: 'Guided climb, sunrise yoga & cable car down.' },
+          { name: 'Cape Peninsula Odyssey', price: 6100, desc: 'Chapman’s Peak drive, penguins & lighthouse.' },
+          { name: 'Robben Island Legacy Tour', price: 2900, desc: 'Ferry with former political guide + museum.' }
+        ]
+      }
+    };
+
+    const userData = {
+      name: '',
+      email: '',
+      selections: [],
+      total: 0,
+      destination: ''
+    };
+
+    let currentDestination = null;
+
+    function showPage(num) {
+      pages.forEach((page, idx) => {
+        page.classList.toggle('active', idx === num - 1);
+      });
+      navDots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === num - 1);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openModal(message, callback) {
+      modalMessage.textContent = message;
+      modalOverlay.classList.remove('hidden');
+      modalClose.onclick = () => {
+        modalOverlay.classList.add('hidden');
+        callback && callback();
+      };
+    }
+
+    showPage(1);
+
+    const form = document.getElementById('registration-form');
+    const validators = {
+      name: value => value.trim().length > 0,
+      email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      phone: value => /^\d{10}$/.test(value),
+      pin: value => /^\d{6}$/.test(value),
+      bio: value => value.trim().length > 0
+    };
+
+    form.querySelectorAll('input, textarea').forEach(input => {
+      input.addEventListener('input', () => {
+        const valid = validators[input.name](input.value);
+        const error = input.nextElementSibling;
+        if (error) error.classList.toggle('hidden', valid);
+      });
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      let valid = true;
+      form.querySelectorAll('input, textarea').forEach(input => {
+        const isValid = validators[input.name](input.value);
+        const error = input.nextElementSibling;
+        if (error) error.classList.toggle('hidden', isValid);
+        if (!isValid) valid = false;
+      });
+      if (!valid) return;
+
+      userData.name = form.name.value.trim();
+      userData.email = form.email.value.trim();
+
+      openModal('Registration Successful — Welcome to VoyageFlow!', () => showPage(2));
+    });
+
+    document.querySelectorAll('.scroll-link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.destination);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+
+    document.querySelectorAll('.select-destination').forEach(btn => {
+      btn.addEventListener('click', () => selectDestination(btn.dataset.destination));
+    });
+
+    document.getElementById('change-destination').addEventListener('click', () => {
+      showPage(2);
+      if (currentDestination) {
+        const section = document.getElementById(currentDestination);
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    function setActiveDestinationCard(key) {
+      document.querySelectorAll('[data-destination-card]').forEach(card => {
+        card.classList.toggle('active', card.dataset.destinationCard === key);
+      });
+    }
+
+    function renderOptions(category, options) {
+      const containerMap = {
+        travel: travelContainer,
+        food: foodContainer,
+        activities: activitiesContainer
+      };
+      const container = containerMap[category];
+      container.innerHTML = '';
+      options.forEach((opt, idx) => {
+        const label = document.createElement('label');
+        label.className = 'calculator-card rounded-2xl p-4 flex items-start gap-4';
+        label.innerHTML = `
+          <input type="checkbox" class="mt-1 option-checkbox accent-cyan-300" data-category="${category}" data-name="${opt.name}" data-price="${opt.price}" />
+          <div class="flex-1">
+            <p class="font-semibold text-white">${opt.name}</p>
+            <p class="text-sm text-cyan-100/70">${opt.desc}</p>
+          </div>
+          <span class="text-lg font-semibold text-cyan-200">₹${opt.price.toLocaleString()}</span>
+        `;
+        container.appendChild(label);
+      });
+      bindOptionEvents();
+    }
+
+    function selectDestination(key) {
+      const config = destinationCatalog[key];
+      if (!config) return;
+      currentDestination = key;
+      userData.destination = config.label;
+      destinationChip.textContent = config.label;
+      destinationTagline.textContent = config.tagline;
+      calculatorNote.textContent = `Curated picks calibrated for ${config.label}. Toggle what you love, skip what you don’t.`;
+      setActiveDestinationCard(key);
+      renderOptions('travel', config.travel);
+      renderOptions('food', config.food);
+      renderOptions('activities', config.activities);
+      document.getElementById('summary-destination').textContent = config.label;
+      clearSelections(true);
+      openModal(`${config.label} locked — let’s craft your itinerary!`, () => showPage(3));
+    }
+
+    function bindOptionEvents() {
+      document.querySelectorAll('.option-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateTotal);
+      });
+    }
+
+    function updateTotal() {
+      let total = 0;
+      userData.selections = [];
+      const categoryLabels = { travel: 'Travel', food: 'Cuisine', activities: 'Activity' };
+      document.querySelectorAll('.option-checkbox').forEach(cb => {
+        if (cb.checked) {
+          const price = parseInt(cb.dataset.price, 10);
+          total += price;
+          const label = categoryLabels[cb.dataset.category] || cb.dataset.category;
+          userData.selections.push(`${label}: ${cb.dataset.name} (₹${price.toLocaleString()})`);
+        }
+      });
+      userData.total = total;
+      totalAmountEl.textContent = `₹${total.toLocaleString()}`;
+    }
+
+    function clearSelections(skipModal) {
+      document.querySelectorAll('.option-checkbox').forEach(cb => cb.checked = false);
+      userData.selections = [];
+      userData.total = 0;
+      totalAmountEl.textContent = '₹0';
+      if (!skipModal) updateTotal();
+    }
+
+    document.getElementById('clear-options').addEventListener('click', () => {
+      if (!currentDestination) {
+        openModal('Select a destination first to unlock options.');
+        return;
+      }
+      clearSelections();
+    });
+
+    document.getElementById('to-calculator').addEventListener('click', () => {
+      if (!currentDestination) {
+        openModal('Pick a destination like Paris or Tokyo to continue.');
+        return;
+      }
+      showPage(3);
+    });
+
+    document.getElementById('confirm-trip').addEventListener('click', () => {
+      if (!currentDestination) {
+        openModal('Choose a destination before confirming.');
+        return;
+      }
+      if (userData.selections.length === 0) {
+        openModal('Please select at least one option to proceed.');
+        return;
+      }
+      openModal('Trip Confirmed — Proceeding to Final Page', () => {
+        updateSummary();
+        showPage(4);
+      });
+    });
+
+    function updateSummary() {
+      const name = userData.name || 'Explorer';
+      document.getElementById('summary-greeting').textContent = `Bon Voyage, ${name}!`;
+      document.getElementById('summary-name').textContent = name;
+      document.getElementById('summary-email').textContent = userData.email || '—';
+      document.getElementById('summary-subtitle').innerHTML = `We’ve emailed your itinerary to <span class="font-semibold" id="summary-email-inline">${userData.email || '—'}</span>. Celebrate the journey!`;
+      document.getElementById('summary-destination').textContent = userData.destination || 'Pick a city';
+      document.getElementById('summary-total').textContent = `₹${userData.total.toLocaleString()}`;
+      const list = document.getElementById('summary-items');
+      list.innerHTML = '';
+      if (userData.selections.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'Base experience confirmed — no add-ons selected.';
+        list.appendChild(li);
+      } else {
+        userData.selections.forEach(item => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          list.appendChild(li);
+        });
+      }
+    }
+
+    document.getElementById('start-over').addEventListener('click', () => {
+      form.reset();
+      clearSelections(true);
+      userData.name = '';
+      userData.email = '';
+      userData.destination = '';
+      destinationChip.textContent = '—';
+      destinationTagline.textContent = 'Select a city to unlock curated pricing.';
+      calculatorNote.textContent = 'Mix & match travel, food, and activities once you pick your dream destination.';
+      travelContainer.innerHTML = '<p class="text-sm text-cyan-100/60 italic">Pick a destination to reveal flight plans.</p>';
+      foodContainer.innerHTML = '<p class="text-sm text-cyan-100/60 italic">Pick a destination to unlock chef tables.</p>';
+      activitiesContainer.innerHTML = '<p class="text-sm text-cyan-100/60 italic">Pick a destination to see immersive experiences.</p>';
+      setActiveDestinationCard(null);
+      document.getElementById('summary-destination').textContent = '—';
+      showPage(1);
+    });
+
+    document.getElementById('download-summary').addEventListener('click', () => {
+      const summary = `
+VoyageFlow Summary
+------------------
+Name: ${userData.name || '—'}
+Email: ${userData.email || '—'}
+Destination: ${userData.destination || 'Not selected'}
+Selections:
+${userData.selections.length ? userData.selections.map(i => '- ' + i).join('\\n') : '- Base experience only'}
+Total: ₹${userData.total.toLocaleString()}
+`;
+      const blob = new Blob([summary.trim()], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'VoyageFlow-summary.txt';
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
